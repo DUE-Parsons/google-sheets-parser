@@ -1,0 +1,4 @@
+node_modules/
+*.md
+.DS_Store
+sheet_id.txt
