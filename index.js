@@ -38,7 +38,7 @@ function writeMd(element, index, array) {
   //end of front matter
   md += "\n" + row.fullprojectdescription;
   //end of body
-  fs.writeFile(row.yournameasyouwantitdisplayedonthewebsite.cleanupDash() + '.md', md, function (err) {
+  fs.writeFile('responses/' + row.yournameasyouwantitdisplayedonthewebsite.cleanupDash() + '.md', md, function (err) {
     if (err) throw err;
     console.log('Saved ' + row.yournameasyouwantitdisplayedonthewebsite.cleanupDash() + ' project.');
   });

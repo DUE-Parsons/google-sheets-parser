@@ -1,4 +1,4 @@
 node_modules/
-*.md
+responses/
 .DS_Store
 sheet_id.txt
