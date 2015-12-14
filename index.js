@@ -27,20 +27,34 @@ function writeMd(element, index, array) {
   md += "\n" + "layout: project-page";
   md += "\n" + "title: " + row.yourprojecttitle;
   md += "\n" + "linkname: " + row.yourprojecttitle.cleanupDash(); //this will be the project permalink
-  md += "\n" + "author: " + row.yournameasyouwantitdisplayedonthewebsite;
-  md += "\n" + "thumbnail-path: ";
+  md += "\n" + "author: " + row.yourfirstname + " " + row.yourlastname;
   md += "\n" + "tagline: " + row.shortdescriptionofyourproject;
   md += "\n" + "location: " + row.projectlocations;
-  md += "\n" + "project-link: " + row.alinktoyourproject;
+  md += "\n" + "project-link:";
+  var links = row.alinktoyourproject.split(';');
+  for (var i = 0; i < links.length; i++) {
+    md += "\n" + "    - href: " + links[i];
+  }
   md += "\n" + "embed-link: " + row.wantyourprojectembeddedonthewebsite;
+  md += "\n" + "tags: " + row.projecttags;
+  md += "\n" + "thumbnail-path: ../../img/" + row.yourfirstname.toLowerCase() + "\/1.jpg";
+  md += "\n" + "img-folder: ../../img/" + row.yourfirstname.toLowerCase() +"\/";
   md += "\n" + "timestamp: " + row.timestamp;
   md += "\n" + "---";
   //end of front matter
-  md += "\n" + row.fullprojectdescription;
+  var body = row.fullprojectdescription
+  var images = body.match(/(\bimg)\d+/ig);
+  for (var i = 0; i < images.length; i++) {
+    var digits = images[i].match(/\d+/g)[0];
+    var path = '![]({{ page.img-folder }}' + digits + '.jpg)';
+    body = body.replace(images[i], path);
+  }
+  // md += "\n" + row.fullprojectdescription;
+  md += "\n" + body;
   //end of body
-  fs.writeFile('responses/' + row.yournameasyouwantitdisplayedonthewebsite.cleanupDash() + '.md', md, function (err) {
+  fs.writeFile('responses/' + row.yourprojecttitle.cleanupDash() + '.md', md, function (err) {
     if (err) throw err;
-    console.log('Saved ' + row.yournameasyouwantitdisplayedonthewebsite.cleanupDash() + ' project.');
+    console.log('Saved ' + row.yourprojecttitle.cleanupDash() + ' project.');
   });
 }
 
