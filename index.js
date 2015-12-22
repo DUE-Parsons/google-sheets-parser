@@ -23,20 +23,28 @@ function writeMd(element, index, array) {
   // begin front matter
   var md = "---";
   md += "\n" + "layout: project-page";
-  md += "\n" + "title: " + row.yourprojecttitle;
+  md += "\n" + "title: " + '"' + row.yourprojecttitle + '"';
   var projectSlug = cleanupDash(row.yourprojecttitle);
   md += "\n" + "linkname: " + projectSlug; //this will be the project permalink
-  md += "\n" + "author: " + row.projectauthor;
-  md += "\n" + "tagline: " + row.shortdescriptionofyourproject;
-  md += "\n" + "location: " + row.projectlocations;
+  md += "\n" + "author: " + '"' + row.projectauthor + '"';
+  md += "\n" + "tagline: " + '"' + row.shortdescriptionofyourproject + '"';
+  md += "\n" + "location:";
+  var places = row.projectlocations.split(';');
+  for (var i = 0; i < places.length; i++) {
+    md += "\n" + "    - place: " + places[i];
+  }
   md += "\n" + "project-link:";
   var links = row.alinktoyourproject.split(';');
   for (var i = 0; i < links.length; i++) {
     md += "\n" + "    - href: " + links[i];
   }
-  md += "\n" + "tags: " + row.projecttags;
+  md += "\n" + "tags:";
+  var tags = row.projecttags.split(';');
+  for (var i = 0; i < tags.length; i++) {
+    md += "\n" + "    - tag: " + tags[i];
+  }
   var mainImage = parseImgLink(row.mainprojectimage);
-  md += "\n" + "thumbnail-path: ../../img/" + projectSlug + '/' + extractFileName(mainImage);
+  md += "\n" + "thumbnail-path: img/" + projectSlug + '/' + extractFileName(mainImage);
   md += "\n" + "img-folder: ../../img/" + projectSlug + '/';
   md += "\n" + "timestamp: " + row.timestamp;
   md += "\n" + "---";
