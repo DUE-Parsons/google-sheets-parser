@@ -3,7 +3,7 @@ var request = require('request');
 var GoogleSpreadsheet = require('google-spreadsheet');
 var async = require('async');
 
-var sheetId = fs.readFileSync('sheet_id.txt', 'utf8');
+var sheetId = fs.readFileSync('sheet_id.txt', 'utf8').trim();
 
 console.log('Accessing google sheet id ' + sheetId);
 
