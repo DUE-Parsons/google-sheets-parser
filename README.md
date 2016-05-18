@@ -10,9 +10,13 @@ Imports data from public Google Sheets and parses it to Jekyll markdown with yam
   1. Make it public.
   2. Go to **File > Publish to the web** and publish it.
  4. Create a file named `sheet_id.txt` in the directory. Put the sheet's id in this file. For example, if your sheet's URL is:
+
         https://docs.google.com/spreadsheets/d/MSjDkqe7OzWgd390OaWDzzFTi/
+
     put
+
         MSjDkqe7OzWgd390OaWDzzFTi
+
     in the file.
  5. `npm ./index.js`
  6. Copy the contents of `responses/` to your Jekyll site.
