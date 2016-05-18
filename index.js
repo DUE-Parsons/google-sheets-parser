@@ -56,6 +56,9 @@ function writeMd(element, index, array) {
 
   // create folders for project images
   var projectFolder = 'responses/img/' + projectSlug;
+  if (!fs.existsSync('responses/')){
+    fs.mkdirSync('responses/');
+  }
   if (!fs.existsSync('responses/img/')){
     fs.mkdirSync('responses/img/')
   }
