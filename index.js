@@ -14,6 +14,10 @@ var my_sheet = new GoogleSpreadsheet(sheetId);
 // IMPORTANT: See note below on how to make a sheet public-readable!
 // # is worksheet id - IDs start at 1
 my_sheet.getRows( 1, function(err, rows){
+  if (err) {
+    console.error(err);
+    process.exit(1);
+  }
   console.log( 'pulled in ' + rows.length + ' rows');
   rows.forEach(writeMd);
 });
