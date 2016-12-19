@@ -18,5 +18,5 @@ Imports data from public Google Sheets and parses it to Jekyll markdown with yam
         MSjDkqe7OzWgd390OaWDzzFTi
 
     in the file.
- 5. `npm ./index.js`
+ 5. `node ./index.js`
  6. Copy the contents of `responses/` to your Jekyll site.
