@@ -40,14 +40,18 @@ function writeMd(element, index, array) {
   }
 
   impurge.purge(row.mainprojectimage, function (error, urls) {
+    if (!urls) {
+      console.warn('Cannot load image at url: ' + row.mainprojectimage + ', skipping');
+      return;
+    }
     var mainImage = urls[0];
 
     // begin front matter
     var md = "---";
     md += "\n" + "layout: project-page";
-    md += "\n" + "title: " + '"' + row.yourprojecttitle + '"';
+    md += "\n" + "title: " + '"' + row.yourprojecttitle.replace(/"/g, '\\"') + '"';
     md += "\n" + "linkname: " + projectSlug; //this will be the project permalink
-    md += "\n" + "author: " + '"' + row.projectauthor + '"';
+    md += "\n" + "author: " + '"' + row.projectauthor.replace(/"/g, '\\"') + '"';
     md += "\n" + "tagline: " + '"' + row.shortdescriptionofyourproject.replace(/"/g, '\\"') + '"';
     md += "\n" + "location:";
     var places = row.projectlocations.split(';');
@@ -77,27 +81,33 @@ function writeMd(element, index, array) {
 
     // start of body
     var body = row.fullprojectdescription;
-    var images = body.match(/[^\s]*imgur[^\s]*/ig);
+    var images = body.match(/http[^\s]*imgur[^\s]*/ig);
 
     // download images
     if (!images) images = [];
     async.map(images,
       function (image, callback) {
         impurge.purge(image, function (error, urls) {
+          if (!urls) return callback('no imgur urls');
           callback(error, [image, urls[0]]);
         });
       },
       function (err, results) {
-        results.forEach(function (result) {
-          var originalImageUrl = result[0];
-          var fixedImageUrl = result[1];
-          var fileName = extractFileName(fixedImageUrl);
-          download(fixedImageUrl, projectFolder + '\/' + fileName, function(err, result) {
-            console.log('downloaded ' + fileName);
+        if (!err && results) {
+          results.forEach(function (result) {
+            var originalImageUrl = result[0];
+            var fixedImageUrl = result[1];
+            var fileName = extractFileName(fixedImageUrl);
+
+            if (fileName) {
+              download(fixedImageUrl, projectFolder + '\/' + fileName, function(err, result) {
+                console.log('downloaded ' + fileName);
+              });
+              var mdImg = '![]({{ page.img-folder }}' + fileName + ')';
+              body = body.replace(originalImageUrl, mdImg); // replace url in body for md link to downloaded file
+            }
           });
-          var mdImg = '![]({{ page.img-folder }}' + fileName + ')';
-          body = body.replace(originalImageUrl, mdImg); // replace url in body for md link to downloaded file
-        });
+        }
 
         md += "\n" + body;
         // end of body
@@ -114,9 +124,11 @@ function writeMd(element, index, array) {
 
 // http://stackoverflow.com/questions/12740659/downloading-images-with-node-js
 var download = function(uri, filename, callback){
+  if (!uri) return callback('no url to download');
   request.head(uri, function(err, res, body){
     // console.log('content-type:', res.headers['content-type']);
     // console.log('content-length:', res.headers['content-length']);
+    if (!res) return callback('no response');
     if (res.headers['content-type'].search('image') > -1) {
       // var ext = '.' + res.headers['content-type'].split('/')[1];
       request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
@@ -125,6 +137,7 @@ var download = function(uri, filename, callback){
 };
 
 function extractFileName(url) {
+  if (!url) return null;
   var lastSlash = url.lastIndexOf('\/');
   var fileName = url.substring(lastSlash + 1, url.length);
   return fileName;
