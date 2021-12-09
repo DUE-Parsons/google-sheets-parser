@@ -6,8 +6,8 @@
   "dependencies": {
     "async": "^1.5.0",
     "google-spreadsheet": "^1.0.1",
-    "impurge": "^0.9.1",
-    "request": "^2.67.0"
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5"
   },
   "devDependencies": {},
   "scripts": {

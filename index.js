@@ -1,8 +1,7 @@
 var fs = require('fs');
-var request = require('request');
+var rp = require('request-promise-native');
 var GoogleSpreadsheet = require('google-spreadsheet');
 var async = require('async');
-var impurge = require('impurge');
 
 var sheetId = fs.readFileSync('sheet_id.txt', 'utf8').trim();
 
@@ -39,101 +38,78 @@ function writeMd(element, index, array) {
     fs.mkdirSync(projectFolder)
   }
 
-  impurge.purge(row.mainprojectimage, function (error, urls) {
-    if (!urls) {
-      console.warn('Cannot load image at url: ' + row.mainprojectimage + ', skipping');
-      return;
-    }
-    var mainImage = urls[0];
+  var mainImage = row.mainprojectimage;
 
-    // begin front matter
-    var md = "---";
-    md += "\n" + "layout: project-page";
-    md += "\n" + "title: " + '"' + row.yourprojecttitle.replace(/"/g, '\\"') + '"';
-    md += "\n" + "linkname: " + projectSlug; //this will be the project permalink
-    md += "\n" + "author: " + '"' + row.projectauthor.replace(/"/g, '\\"') + '"';
-    md += "\n" + "tagline: " + '"' + row.shortdescriptionofyourproject.replace(/"/g, '\\"') + '"';
-    md += "\n" + "location:";
-    var places = row.projectlocations.split(';');
-    for (var i = 0; i < places.length; i++) {
-      md += "\n" + "    - place: " + places[i];
-    }
-    md += "\n" + "project-link:";
-    var links = row.alinktoyourproject.split(';');
-    for (var i = 0; i < links.length; i++) {
-      md += "\n" + "    - href: " + links[i];
-    }
-    md += "\n" + "tags:";
-    var tags = row.projecttags.split(';');
-    for (var i = 0; i < tags.length; i++) {
-      md += "\n" + "    - tag: " + tags[i];
-    }
-    md += "\n" + "thumbnail-path: img/" + projectSlug + '/' + extractFileName(mainImage);
-    md += "\n" + "img-folder: ../../img/" + projectSlug + '/';
-    md += "\n" + "timestamp: " + row.timestamp;
-    md += "\n" + "---";
-    // end of front matter
+  // begin front matter
+  var md = "---";
+  md += "\n" + "layout: project-page";
+  md += "\n" + "title: " + '"' + row.yourprojecttitle.replace(/"/g, '\\"') + '"';
+  md += "\n" + "linkname: " + projectSlug; //this will be the project permalink
+  md += "\n" + "author: " + '"' + row.projectauthor.replace(/"/g, '\\"') + '"';
+  md += "\n" + "tagline: " + '"' + row.shortdescriptionofyourproject.replace(/"/g, '\\"') + '"';
+  md += "\n" + "location:";
+  var places = row.projectlocations.split(';');
+  for (var i = 0; i < places.length; i++) {
+    md += "\n" + "    - place: " + places[i];
+  }
+  md += "\n" + "project-link:";
+  var links = row.alinktoyourproject.split(';');
+  for (var i = 0; i < links.length; i++) {
+    md += "\n" + "    - href: " + links[i];
+  }
+  md += "\n" + "tags:";
+  var tags = row.projecttags.split(';');
+  for (var i = 0; i < tags.length; i++) {
+    md += "\n" + "    - tag: " + tags[i];
+  }
+  md += "\n" + "thumbnail-path: img/" + projectSlug + '/' + extractFileName(mainImage);
+  md += "\n" + "img-folder: ../../img/" + projectSlug + '/';
+  md += "\n" + "timestamp: " + row.timestamp;
+  md += "\n" + "---";
+  // end of front matter
 
-    // download main image
-    download(mainImage, projectFolder + '\/' + extractFileName(mainImage), function(){
-        console.log('downloaded main image ' + extractFileName(mainImage));
-    });
+  // start of body
+  var body = row.fullprojectdescription;
+  console.log(row.yourprojecttitle);
+  var images = body.match(/http[^\s]*imgur[^\s]*/ig);
 
-    // start of body
-    var body = row.fullprojectdescription;
-    var images = body.match(/http[^\s]*imgur[^\s]*/ig);
+  // download images
+  if (!images) images = [];
+  images.push(mainImage);
+  images.forEach(function (image) {
+    var fileName = extractFileName(image);
 
-    // download images
-    if (!images) images = [];
-    async.map(images,
-      function (image, callback) {
-        impurge.purge(image, function (error, urls) {
-          if (!urls) return callback('no imgur urls');
-          callback(error, [image, urls[0]]);
+    if (image && fileName) {
+      downloadImage(image, projectFolder + '\/' + fileName)
+        .then(function () {
+          console.log('Downloaded ' + fileName);
+        })
+        .catch(function (error) {
+          console.warn(row.yourprojecttitle + ': ' + error.message);
         });
-      },
-      function (err, results) {
-        if (!err && results) {
-          results.forEach(function (result) {
-            var originalImageUrl = result[0];
-            var fixedImageUrl = result[1];
-            var fileName = extractFileName(fixedImageUrl);
+      var mdImg = '![]({{ page.img-folder }}' + fileName + ')';
+      body = body.replace(image, mdImg); // replace url in body for md link to downloaded file
+    }
+  });
 
-            if (fileName) {
-              download(fixedImageUrl, projectFolder + '\/' + fileName, function(err, result) {
-                console.log('downloaded ' + fileName);
-              });
-              var mdImg = '![]({{ page.img-folder }}' + fileName + ')';
-              body = body.replace(originalImageUrl, mdImg); // replace url in body for md link to downloaded file
-            }
-          });
-        }
+  md += "\n" + body;
 
-        md += "\n" + body;
-        // end of body
-
-        // write project md file
-        fs.writeFile('responses/' + projectSlug + '.md', md, function (err) {
-          if (err) throw err;
-          console.log('Saved ' + projectSlug + ' project.');
-        });
-      }
-    );
+  // write project md file
+  fs.writeFile('responses/' + projectSlug + '.md', md, function (err) {
+    if (err) throw err;
+    console.log('Saved ' + projectSlug + ' project.');
   });
 }
 
-// http://stackoverflow.com/questions/12740659/downloading-images-with-node-js
-var download = function(uri, filename, callback){
-  if (!uri) return callback('no url to download');
-  request.head(uri, function(err, res, body){
-    // console.log('content-type:', res.headers['content-type']);
-    // console.log('content-length:', res.headers['content-length']);
-    if (!res) return callback('no response');
-    if (res.headers['content-type'].search('image') > -1) {
-      // var ext = '.' + res.headers['content-type'].split('/')[1];
-      request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
-    }
-  });
+function downloadImage(uri, filename) {
+  return rp.head(uri)
+    .then((res) => {
+      if (!res || res['content-type'].search('image') < 0) {
+        throw new Error('Failed to download image:' + uri);
+      }
+      return rp(uri)
+        .pipe(fs.createWriteStream(filename));
+    });
 };
 
 function extractFileName(url) {
